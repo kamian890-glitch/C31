@@ -1,0 +1,114 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JANTEX LAB APP</title><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0a1c33">
+<link rel="icon" href="icon.svg">
+<style>
+:root{--bg:#0a1c33;--bg2:#10294a;--card:#14335a;--line:#24476f;--teal:#19c3b4;--teal2:#0f8f86;--tx:#eef5fb;--mut:#93aac4;--warn:#ffd95a;--bad:#ff6b6b;--r:14px;font-family:"Segoe UI",system-ui,Roboto,sans-serif}
+*{box-sizing:border-box;margin:0}html,body{height:100%}body{background:var(--bg);color:var(--tx);padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#splash{position:fixed;inset:0;z-index:99;background:radial-gradient(circle at 50% 35%,#16467a,#0a1c33 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;transition:opacity .6s}
+#splash.off{opacity:0;pointer-events:none}
+.logo{width:110px;height:110px;animation:spin 6s linear infinite}@keyframes spin{50%{transform:scale(1.08)}}
+#splash h1{font-size:2rem;letter-spacing:.12em;margin-top:18px}#splash p{color:var(--teal);margin-top:6px}.by{color:var(--mut);margin-top:14px}
+.bar{width:200px;height:4px;background:var(--line);border-radius:4px;margin:26px 0 18px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:var(--teal);animation:ld 5.5s linear forwards}@keyframes ld{to{width:100%}}
+#quotes{font-style:italic;color:#cfe3f5;max-width:300px;line-height:1.5}
+header{padding:16px 16px 8px;display:flex;align-items:center;gap:10px}header b{font-size:1.25rem;letter-spacing:.08em}header small{display:block;color:var(--mut);font-size:.72rem}
+main{padding:0 16px 96px;max-width:1000px;margin:auto}
+#q{width:100%;font-size:1.15rem;padding:16px 18px;border-radius:var(--r);border:2px solid var(--teal2);background:var(--bg2);color:var(--tx);outline:none}#q:focus{border-color:var(--teal)}
+.btn{background:var(--teal);color:#042a2a;border:0;border-radius:var(--r);padding:12px 18px;font-weight:700;font-size:1rem;cursor:pointer}.btn.g{background:var(--card);color:var(--tx);border:1px solid var(--line)}.btn.r{background:var(--bad);color:#2a0505}
+.big{width:100%;padding:20px;font-size:1.2rem;margin:12px 0;display:flex;gap:10px;align-items:center;justify-content:center}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:10px 0}@media(min-width:700px){.stats{grid-template-columns:repeat(4,1fr)}}
+.st{background:var(--card);border-radius:var(--r);padding:14px;border-left:4px solid var(--teal)}.st b{font-size:1.7rem}.st span{display:block;color:var(--mut);font-size:.8rem}
+.res{background:var(--card);border-radius:var(--r);padding:14px;margin:10px 0;cursor:pointer;border:1px solid var(--line)}
+.res .n{font-size:1.5rem;font-weight:800}.res .no{font-size:1.2rem;font-weight:700;color:var(--teal)}.res dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin-top:8px;font-size:.9rem}dt{color:var(--mut)}dd{margin:0}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--bg2);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:0;border:0;color:var(--mut);padding:10px 2px;font-size:.72rem;cursor:pointer}nav button.on{color:var(--teal);font-weight:700}nav button span{display:block;font-size:1.3rem}
+.sc{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:760px}th{font-size:.75rem;color:var(--mut);text-align:left;padding:6px}td{padding:3px}
+td input{width:100%;min-width:70px;background:var(--bg2);border:1px solid var(--line);color:var(--tx);padding:8px;border-radius:8px;font-size:.9rem}td input.w{background:#4d4310;border-color:var(--warn)}
+canvas.crop{max-width:230px;border-radius:6px;display:block}
+.modal{position:fixed;inset:0;background:#000a;z-index:50;display:flex;align-items:flex-end;justify-content:center}.modal>div{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:20px 20px 0 0;padding:18px}
+label{display:block;font-size:.8rem;color:var(--mut);margin-top:10px}label input,label textarea{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg2);color:var(--tx);font-size:1rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.pill{display:inline-block;background:var(--bg2);border-radius:20px;padding:3px 10px;font-size:.78rem;color:var(--mut)}
+#st{background:var(--card);padding:10px 14px;border-radius:var(--r);margin:10px 0;display:none}progress{width:100%;accent-color:var(--teal)}
+h2{margin:14px 0 6px;font-size:1.1rem}.hist{border-left:3px solid var(--teal);padding:8px 12px;margin:8px 0;background:var(--card);border-radius:0 10px 10px 0}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body>
+<div id="splash"><svg class="logo" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="none" stroke="#19c3b4" stroke-width="3"/><path d="M40 14h20v6l-4 6v18l22 34a8 8 0 0 1-7 12H29a8 8 0 0 1-7-12l22-34V26l-4-6z" fill="#14335a" stroke="#19c3b4" stroke-width="3"/><path d="M30 70h40" stroke="#19c3b4" stroke-width="5"/></svg>
+<h1>JANTEX LAB APP</h1><p>Textile Lab Management System</p><div class="by">Created by Kamran_Zahoor</div><div class="bar"><i></i></div><div id="quotes"></div></div>
+<header><svg width="34" height="34" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#14335a" stroke="#19c3b4" stroke-width="5"/><path d="M40 20h20v8l-4 6v14l16 26H28l16-26V34l-4-6z" fill="#19c3b4"/></svg><div><b>JANTEX LAB APP</b><small>Created by Kamran_Zahoor</small></div></header>
+<main id="m"></main>
+<nav id="nav"></nav><div id="md"></div>
+<input type="file" id="fcam" accept="image/*" capture="environment" hidden><input type="file" id="fgal" accept="image/*" multiple hidden>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const Q=["Quality is not an act, it is a habit.","Every test matters. Every detail counts.","Precision creates perfection.","Excellence begins with attention to detail.","Better testing. Better quality. Better results.","Consistency is the key to quality."];
+const qs=[...Q].sort(()=>Math.random()-.5).slice(0,2);$('#quotes').innerHTML=qs.map(esc).join('<br><br>');
+setTimeout(()=>{$('#splash').classList.add('off');setTimeout(()=>$('#splash').remove(),700)},5800);
+/* ---------- IndexedDB ---------- */
+const DB=new Promise((ok,no)=>{const r=indexedDB.open('jantex',1);r.onupgradeneeded=()=>{r.result.createObjectStore('lots',{keyPath:'id',autoIncrement:true});r.result.createObjectStore('images',{keyPath:'id',autoIncrement:true})};r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
+const tx=async(s,m,f)=>{const d=await DB;return new Promise((ok,no)=>{const t=d.transaction(s,m);const q=f(t.objectStore(s));t.oncomplete=()=>ok(q&&q.result);t.onerror=()=>no(t.error)})};
+const getAll=(s='lots')=>tx(s,'readonly',o=>o.getAll()),put=(o,s='lots')=>tx(s,'readwrite',x=>x.put(o)),del=(id,s='lots')=>tx(s,'readwrite',x=>x.delete(id));
+const F=[['regDate','Register Entry Date'],['lotName','Lot Name'],['lotNo','Lot Number'],['total','Total Colors'],['received','Colors Received'],['reportDate','Report Date'],['reportColors','Report Colors'],['quality','Quality'],['remarks','Remarks']];
+/* ---------- UI ---------- */
+let view='home',draft=[],busy='';
+const tabs=[['home','🏠','Home'],['scan','📷','Scan'],['reg','📒','Register'],['bin','🗑️','Bin'],['bk','💾','Backup']];
+function nav(){$('#nav').innerHTML=tabs.map(t=>`<button class="${view==t[0]?'on':''}" onclick="go('${t[0]}')"><span>${t[1]}</span>${t[2]}</button>`).join('')}
+function go(v){view=v;nav();render()}
+async function render(){const m=$('#m'),L=(await getAll()).filter(x=>!x.del);
+ if(view=='home'){const lots=new Set(L.map(x=>x.lotNo)).size,col=L.reduce((a,x)=>a+(parseInt(x.total)||0),0),today=new Date().toISOString().slice(0,10);
+  m.innerHTML=`<input id="q" placeholder="🔍 Search lot name, number, date, sample…" oninput="search()" autocomplete="off"><button class="btn big" onclick="go('scan')">📷 Scan Register</button>
+  <div class="stats"><div class="st"><b>${lots}</b><span>Total Lots</span></div><div class="st"><b>${col}</b><span>Total Colors</span></div><div class="st"><b>${L.filter(x=>x.reportDate).length}</b><span>Reports Done</span></div><div class="st"><b>${L.filter(x=>!x.reportDate).length}</b><span>Reports Pending</span></div></div><div id="rs"></div>`;search()}
+ if(view=='reg'){const by={};L.forEach(x=>(by[x.regDate||'—']??=[]).push(x));
+  m.innerHTML=`<h2>Register <button class="btn g" onclick="edit()">+ Add Lot</button></h2>`+(L.length?Object.keys(by).sort().reverse().map(d=>`<h2>${esc(d)} <span class="pill">${by[d].length} lots</span> <button class="btn g" onclick="delDay('${esc(d)}')">Delete day</button></h2>`+by[d].map(card).join('')).join(''):'<p style="color:var(--mut);margin-top:14px">No records yet. Scan a register page to start.</p>')}
+ if(view=='bin'){const B=(await getAll()).filter(x=>x.del);m.innerHTML='<h2>Recycle Bin</h2>'+(B.length?B.map(x=>`<div class="res"><div class="n">${esc(x.lotName)}</div><div class="no">${esc(x.lotNo)}</div><div class="row"><button class="btn" onclick="restore(${x.id})">Restore</button><button class="btn r" onclick="forever(${x.id})">Delete forever</button></div></div>`).join(''):'<p style="color:var(--mut)">Bin is empty.</p>')}
+ if(view=='bk')m.innerHTML=`<h2>Backup &amp; Restore</h2><p style="color:var(--mut)">Saves all records and register photos in one JSON file. Use it to move data to another device.</p><div class="row"><button class="btn" onclick="exportJ()">Download backup</button><button class="btn g" onclick="$('#fr').click()">Restore backup</button><button class="btn g" onclick="exportC()">Export CSV</button></div><input type="file" id="fr" accept=".json" hidden onchange="importJ(this.files[0])">`;
+ if(view=='scan')scanView()}
+function card(x){return `<div class="res" onclick="hist('${esc(x.lotNo)}')"><div class="n">${esc(x.lotName)}</div><div class="no">${esc(x.lotNo)}</div><dl><dt>Total Colors</dt><dd>${esc(x.total)}</dd><dt>Colors Received</dt><dd>${esc(x.received)}</dd><dt>Register Entry Date</dt><dd>${esc(x.regDate)}</dd><dt>Report Date</dt><dd>${esc(x.reportDate)}</dd><dt>Report Colors</dt><dd>${esc(x.reportColors)}</dd><dt>Quality</dt><dd>${esc(x.quality)}</dd></dl></div>`}
+async function search(){const q=($('#q')?.value||'').trim().toLowerCase(),r=$('#rs');if(!r)return;if(!q){r.innerHTML='';return}
+ const L=(await getAll()).filter(x=>!x.del&&[x.lotName,x.lotNo,x.regDate,x.reportDate,x.sample,x.remarks,x.quality].join(' ').toLowerCase().includes(q));
+ r.innerHTML=L.length?L.map(card).join(''):'<p style="color:var(--mut)">No match in the whole database.</p>'}
+async function hist(no){const L=(await getAll()).filter(x=>!x.del&&x.lotNo==no).sort((a,b)=>(a.id-b.id));
+ $('#md').innerHTML=`<div class="modal" onclick="if(event.target==this)this.remove()"><div><h2>History: ${esc(no)}</h2>${L.map(x=>`<div class="hist"><b style="font-size:1.2rem">${esc(x.lotName)}</b><br>Register: ${esc(x.regDate)} · Total: ${esc(x.total)} · Received: ${esc(x.received)}<br>Report: ${esc(x.reportDate)||'—'} · Report colors: ${esc(x.reportColors)||'—'}<br>Quality: ${esc(x.quality)}${x.remarks?'<br>Remarks: '+esc(x.remarks):''}<div class="row"><button class="btn g" onclick="edit(${x.id})">Edit</button><button class="btn g" onclick="dup(${x.id})">Duplicate / Add Report</button><button class="btn g" onclick="share(${x.id})">Share</button><button class="btn r" onclick="rm(${x.id})">Delete</button>${x.imgId?`<button class="btn g" onclick="showImg(${x.imgId})">Photo</button>`:''}</div></div>`).join('')}</div></div>`}
+async function edit(id){const x=id?(await getAll()).find(r=>r.id==id):{regDate:'',lotName:'',lotNo:''};
+ $('#md').innerHTML=`<div class="modal"><div><h2>${id?'Edit':'Add'} Lot</h2>${F.map(f=>`<label>${f[1]}<input id="e_${f[0]}" value="${esc(x[f[0]])}"></label>`).join('')}<div class="row"><button class="btn" onclick="saveE(${id||0})">Save</button><button class="btn g" onclick="$('#md').innerHTML=''">Cancel</button></div></div></div>`}
+async function saveE(id){const o=id?(await getAll()).find(r=>r.id==id):{};F.forEach(f=>o[f[0]]=$('#e_'+f[0]).value.trim());
+ if(id){o.log=(o.log||[]).concat({d:new Date().toISOString(),a:'edit'})}await put(o);$('#md').innerHTML='';render()}
+async function dup(id){const o={...(await getAll()).find(r=>r.id==id)};delete o.id;o.reportDate='';o.reportColors='';o.quality=o.quality;await put(o);$('#md').innerHTML='';edit((await getAll()).pop().id)}
+async function rm(id){if(!confirm('Move this lot to Recycle Bin?'))return;const o=(await getAll()).find(r=>r.id==id);o.del=1;await put(o);$('#md').innerHTML='';render()}
+async function restore(id){const o=(await getAll()).find(r=>r.id==id);o.del=0;await put(o);render()}
+async function forever(id){if(confirm('Delete permanently?')){await del(id);render()}}
+async function delDay(d){const L=(await getAll()).filter(x=>!x.del&&(x.regDate||'—')==d);if(!confirm(`Delete ${L.length} lots, ${L.filter(x=>x.imgId).length} photos for ${d}? They go to the Recycle Bin.`))return;for(const o of L){o.del=1;await put(o)}render()}
+async function share(id){const x=(await getAll()).find(r=>r.id==id),t=`${x.lotName}\n${x.lotNo}\nTotal: ${x.total} | Received: ${x.received}\nRegister: ${x.regDate} | Report: ${x.reportDate} ${x.reportColors}\nQuality: ${x.quality}`;
+ if(navigator.share)try{await navigator.share({text:t});return}catch(e){}try{await navigator.clipboard.writeText(t);alert('Copied')}catch(e){prompt('Copy:',t)}}
+async function showImg(id){const r=(await getAll('images')).find(i=>i.id==id);if(r)$('#md').innerHTML=`<div class="modal" onclick="this.remove()"><div><img src="${URL.createObjectURL(r.blob)}" style="width:100%"></div></div>`}
+/* ---------- Backup ---------- */
+const b2d=b=>new Promise(r=>{const f=new FileReader;f.onload=()=>r(f.result);f.readAsDataURL(b)});
+function dl(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click()}
+async function exportJ(){const imgs=[];for(const i of await getAll('images'))imgs.push({id:i.id,data:await b2d(i.blob)});dl('jantex-backup-'+Date.now()+'.json',JSON.stringify({lots:await getAll(),imgs}),'application/json')}
+async function importJ(f){if(!f)return;const j=JSON.parse(await f.text());for(const i of j.imgs)await put({id:i.id,blob:await (await fetch(i.data)).blob()},'images');for(const l of j.lots)await put(l);alert('Restored');go('home')}
+async function exportC(){const L=await getAll();dl('jantex.csv','\ufeff'+F.map(f=>f[1]).join(',')+'\n'+L.filter(x=>!x.del).map(x=>F.map(f=>'"'+String(x[f[0]]||'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv')}
+/* ---------- Scanner (auto) ---------- */
+function scanView(){$('#m').innerHTML=`<h2>Scan Register</h2><div class="row"><button class="btn big" style="flex:1" onclick="$('#fcam').click()">📷 Camera</button><button class="btn big g" style="flex:1" onclick="$('#fgal').click()">🖼️ Gallery</button></div><div id="st"></div><div id="dr"></div>`;drawDraft();if(busy)stat(busy)}
+function stat(t,p){busy=t;const s=$('#st');if(!s)return;s.style.display=t?'block':'none';s.innerHTML=t+(p!=null?`<progress value="${p}" max="1"></progress>`:'')}
+$('#fcam').onchange=$('#fgal').onchange=async e=>{const fs=[...e.target.files];e.target.value='';for(const f of fs)await scan(f);stat('')};
+let W;async function worker(p){if(!W)W=await Tesseract.createWorker('eng',1,{logger:m=>m.progress!=null&&stat('Reading… '+(m.status||''),m.progress)});return W}
+function prep(img,rot,max){const s=Math.min(1,max/Math.max(img.width,img.height)),w=img.width*s,h=img.height*s,c=document.createElement('canvas');
+ c.width=rot%180?h:w;c.height=rot%180?w:h;const x=c.getContext('2d');x.translate(c.width/2,c.height/2);x.rotate(rot*Math.PI/180);x.filter='grayscale(1) contrast(1.6) brightness(1.1)';x.drawImage(img,-w/2,-h/2,w,h);return c}
+async function scan(file){try{stat('Loading photo…');const img=await createImageBitmap(file),w=await worker();
+ let best=0,bs=-1;for(const r of [0,90,270]){stat('Straightening photo…');const d=(await w.recognize(prep(img,r,900))).data;const s=d.words.filter(k=>k.confidence>60&&/[A-Za-z0-9]{3,}/.test(k.text)).length;if(s>bs){bs=s;best=r}}
+ stat('Extracting data…');const c=prep(img,best,2200),d=(await w.recognize(c,{},{blocks:true})).data;
+ const imgId=(await put({blob:file},'images'));const rows=parse(d.lines||[],c,imgId);draft=draft.concat(rows);if(!rows.length)alert('No rows found. Try a clearer, flat photo or add rows manually.');drawDraft()}catch(e){alert('Scan failed: '+e.message+'\n(First scan needs internet to load OCR files.)')}}
+function parse(lines,c,imgId){let cur='',out=[];for(const ln of lines){const t=ln.text.replace(/[|_]/g,' ').replace(/\s+/g,' ').trim(),cf=ln.confidence;
+ const dh=t.match(/^(\d{1,2})\s*[-\/.]\s*(\d{1,2})\s*[-\/.]\s*(\d{2,4})/);const lm=t.match(/^([A-Z]{1,2}\s*-\s*\d{3,4}(?:\s*\+\s*\d{2,4})*)\s*(.*)$/i);
+ if(dh&&!lm){cur=`${dh[1]}-${dh[2]}-${dh[3]}`;continue}if(!lm)continue;
+ const no=lm[1].replace(/\s/g,'').toUpperCase(),tk=lm[2].split(' '),nm=[],rem=[];let i=0;
+ for(;i<tk.length&&!/^\d+(\+\d+)*$/.test(tk[i]);i++){/^[(\[]/.test(tk[i])?rem.push(tk[i].replace(/[()\[\]]/g,'')):nm.push(tk[i])}
+ const rest=tk.slice(i),tot=rest.shift()||'';let rec=rest[0]&&/^\d+(\+\d+)*$/.test(rest[0])?rest.shift():'';let rd=rest.findIndex(k=>/^\d{1,2}\/\d{1,2}$/.test(k)),rdv='';if(rd>=0){rdv=rest[rd];rest.splice(rd,1)}
+ const b=ln.bbox,pad=6,cr=document.createElement('canvas');cr.className='crop';cr.width=b.x1-b.x0+2*pad;cr.height=b.y1-b.y0+2*pad;cr.getContext('2d').drawImage(c,b.x0-pad,b.y0-pad,cr.width,cr.height,0,0,cr.width,cr.height);
+ out.push({regDate:cur,lotName:nm.join(' '),lotNo:no,total:tot,received:rec,reportDate:rdv,reportColors:'',quality:rest.join(' '),remarks:rem.join(' '),imgId,cf,cr})}return out}
+function drawDraft(){const r=$('#dr');if(!r)return;if(!draft.length){r.innerHTML='<p style="color:var(--mut)">Pick a photo from the camera or gallery. Reading starts automatically.</p>';return}
+ r.innerHTML=`<p style="margin:8px 0;color:var(--mut)">Review the data. Yellow cells are unsure or empty. Nothing is saved until you press Save.</p><div class="sc"><table><tr><th>Photo</th>${F.map(f=>`<th>${f[1]}</th>`).join('')}<th></th></tr>${draft.map((x,i)=>`<tr data-i="${i}"><td class="cp"></td>${F.map(f=>`<td><input class="${(!x[f[0]]&&f[0]!='remarks'&&f[0]!='reportColors')||(x.cf<65&&['lotName','quality','total','received'].includes(f[0]))?'w':''}" value="${esc(x[f[0]])}" oninput="draft[${i}].${f[0]}=this.value"></td>`).join('')}<td><button class="btn r" onclick="draft.splice(${i},1);drawDraft()">✕</button></td></tr>`).join('')}</table></div><div class="row"><button class="btn" onclick="saveDraft()">Save ${draft.length} rows</button><button class="btn g" onclick="draft=[];drawDraft()">Clear</button></div>`;
+ r.querySelectorAll('tr[data-i]').forEach(tr=>tr.querySelector('.cp').appendChild(draft[tr.dataset.i].cr))}
+async function saveDraft(){for(const x of draft){const o={...x};delete o.cr;delete o.cf;o.regDate=o.regDate||new Date().toLocaleDateString('en-GB').replace(/\//g,'-');await put(o)}const n=draft.length;draft=[];alert(n+' rows saved');go('reg')}
+nav();render();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+</script></body></html>
