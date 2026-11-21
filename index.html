@@ -45,7 +45,7 @@ const Q=["Quality is not an act, it is a habit.","Every test matters. Every deta
 const qs=[...Q].sort(()=>Math.random()-.5).slice(0,2);$('#quotes').innerHTML=qs.map(esc).join('<br><br>');
 setTimeout(()=>{$('#splash').classList.add('off');setTimeout(()=>$('#splash').remove(),700)},5800);
 /* ---------- IndexedDB ---------- */
-const DB=new Promise((ok,no)=>{const r=indexedDB.open('jantex',1);r.onupgradeneeded=()=>{r.result.createObjectStore('lots',{keyPath:'id',autoIncrement:true});r.result.createObjectStore('images',{keyPath:'id',autoIncrement:true})};r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
+const DB=new Promise((ok,no)=>{const r=indexedDB.open('jantexlab_v2',1);r.onupgradeneeded=()=>{r.result.createObjectStore('lots',{keyPath:'id',autoIncrement:true});r.result.createObjectStore('images',{keyPath:'id',autoIncrement:true})};r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
 const tx=async(s,m,f)=>{const d=await DB;return new Promise((ok,no)=>{const t=d.transaction(s,m);const q=f(t.objectStore(s));t.oncomplete=()=>ok(q&&q.result);t.onerror=()=>no(t.error)})};
 const getAll=(s='lots')=>tx(s,'readonly',o=>o.getAll()),put=(o,s='lots')=>tx(s,'readwrite',x=>x.put(o)),del=(id,s='lots')=>tx(s,'readwrite',x=>x.delete(id));
 const F=[['regDate','Register Entry Date'],['lotName','Lot Name'],['lotNo','Lot Number'],['total','Total Colors'],['received','Colors Received'],['reportDate','Report Date'],['reportColors','Report Colors'],['quality','Quality'],['remarks','Remarks']];
@@ -91,13 +91,13 @@ async function exportC(){const L=await getAll();dl('jantex.csv','\ufeff'+F.map(f
 function scanView(){$('#m').innerHTML=`<h2>Scan Register</h2><div class="row"><button class="btn big" style="flex:1" onclick="$('#fcam').click()">📷 Camera</button><button class="btn big g" style="flex:1" onclick="$('#fgal').click()">🖼️ Gallery</button></div><div id="st"></div><div id="dr"></div>`;drawDraft();if(busy)stat(busy)}
 function stat(t,p){busy=t;const s=$('#st');if(!s)return;s.style.display=t?'block':'none';s.innerHTML=t+(p!=null?`<progress value="${p}" max="1"></progress>`:'')}
 $('#fcam').onchange=$('#fgal').onchange=async e=>{const fs=[...e.target.files];e.target.value='';for(const f of fs)await scan(f);stat('')};
-let W;async function worker(p){if(!W)W=await Tesseract.createWorker('eng',1,{logger:m=>m.progress!=null&&stat('Reading… '+(m.status||''),m.progress)});return W}
+let W,lastRot=90;async function worker(p){if(!W)W=await Tesseract.createWorker('eng',1,{logger:m=>m.progress!=null&&stat('Reading… '+(m.status||''),m.progress)});return W}
 function prep(img,rot,max){const s=Math.min(1,max/Math.max(img.width,img.height)),w=img.width*s,h=img.height*s,c=document.createElement('canvas');
  c.width=rot%180?h:w;c.height=rot%180?w:h;const x=c.getContext('2d');x.translate(c.width/2,c.height/2);x.rotate(rot*Math.PI/180);x.filter='grayscale(1) contrast(1.6) brightness(1.1)';x.drawImage(img,-w/2,-h/2,w,h);return c}
 async function scan(file){try{stat('Loading photo…');const img=await createImageBitmap(file),w=await worker();
- let best=0,bs=-1;for(const r of [0,90,270]){stat('Straightening photo…');const d=(await w.recognize(prep(img,r,900))).data;const s=d.words.filter(k=>k.confidence>60&&/[A-Za-z0-9]{3,}/.test(k.text)).length;if(s>bs){bs=s;best=r}}
- stat('Extracting data…');const c=prep(img,best,2200),d=(await w.recognize(c,{},{blocks:true})).data;
- const imgId=(await put({blob:file},'images'));const rows=parse(d.lines||[],c,imgId);draft=draft.concat(rows);if(!rows.length)alert('No rows found. Try a clearer, flat photo or add rows manually.');drawDraft()}catch(e){alert('Scan failed: '+e.message+'\n(First scan needs internet to load OCR files.)')}}
+ let best=0,bs=-1;const order=[lastRot,...[0,90,270].filter(x=>x!==lastRot)];for(const r of order){stat('Straightening photo…');const d=(await w.recognize(prep(img,r,640))).data;const s=d.words.filter(k=>k.confidence>60&&/[A-Za-z0-9]{3,}/.test(k.text)).length;if(s>bs){bs=s;best=r}if(s>=12)break}lastRot=best;
+ stat('Extracting data…');const c=prep(img,best,1800),d=(await w.recognize(c,{},{blocks:true})).data;
+ const imgId=(await put({blob:file},'images'));const rows=parse(d.lines||[],c,imgId);draft=draft.concat(rows);if(!rows.length)alert('No rows found. Try a clearer, flat photo or add rows manually.');drawDraft()}catch(e){alert('Scan failed: '+e.message)}}
 function parse(lines,c,imgId){let cur='',out=[];for(const ln of lines){const t=ln.text.replace(/[|_]/g,' ').replace(/\s+/g,' ').trim(),cf=ln.confidence;
  const dh=t.match(/^(\d{1,2})\s*[-\/.]\s*(\d{1,2})\s*[-\/.]\s*(\d{2,4})/);const lm=t.match(/^([A-Z]{1,2}\s*-\s*\d{3,4}(?:\s*\+\s*\d{2,4})*)\s*(.*)$/i);
  if(dh&&!lm){cur=`${dh[1]}-${dh[2]}-${dh[3]}`;continue}if(!lm)continue;
@@ -110,5 +110,5 @@ function drawDraft(){const r=$('#dr');if(!r)return;if(!draft.length){r.innerHTML
  r.innerHTML=`<p style="margin:8px 0;color:var(--mut)">Review the data. Yellow cells are unsure or empty. Nothing is saved until you press Save.</p><div class="sc"><table><tr><th>Photo</th>${F.map(f=>`<th>${f[1]}</th>`).join('')}<th></th></tr>${draft.map((x,i)=>`<tr data-i="${i}"><td class="cp"></td>${F.map(f=>`<td><input class="${(!x[f[0]]&&f[0]!='remarks'&&f[0]!='reportColors')||(x.cf<65&&['lotName','quality','total','received'].includes(f[0]))?'w':''}" value="${esc(x[f[0]])}" oninput="draft[${i}].${f[0]}=this.value"></td>`).join('')}<td><button class="btn r" onclick="draft.splice(${i},1);drawDraft()">✕</button></td></tr>`).join('')}</table></div><div class="row"><button class="btn" onclick="saveDraft()">Save ${draft.length} rows</button><button class="btn g" onclick="draft=[];drawDraft()">Clear</button></div>`;
  r.querySelectorAll('tr[data-i]').forEach(tr=>tr.querySelector('.cp').appendChild(draft[tr.dataset.i].cr))}
 async function saveDraft(){for(const x of draft){const o={...x};delete o.cr;delete o.cf;o.regDate=o.regDate||new Date().toLocaleDateString('en-GB').replace(/\//g,'-');await put(o)}const n=draft.length;draft=[];alert(n+' rows saved');go('reg')}
-nav();render();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+nav();render();setTimeout(()=>{try{worker()}catch(e){}},1500);if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 </script></body></html>
