@@ -34,7 +34,7 @@ h2{margin:14px 0 6px;font-size:1.1rem}.hist{border-left:3px solid var(--teal);pa
 </style></head><body>
 <div id="splash"><svg class="logo" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="none" stroke="#19c3b4" stroke-width="3"/><path d="M40 14h20v6l-4 6v18l22 34a8 8 0 0 1-7 12H29a8 8 0 0 1-7-12l22-34V26l-4-6z" fill="#14335a" stroke="#19c3b4" stroke-width="3"/><path d="M30 70h40" stroke="#19c3b4" stroke-width="5"/></svg>
 <h1>JANTEX LAB APP</h1><p>Textile Lab Management System</p><div class="by">Created by Kamran_Zahoor</div><div class="bar"><i></i></div><div id="quotes"></div></div>
-<header><svg width="34" height="34" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#14335a" stroke="#19c3b4" stroke-width="5"/><path d="M40 20h20v8l-4 6v14l16 26H28l16-26V34l-4-6z" fill="#19c3b4"/></svg><div><b>JANTEX LAB APP</b><small>Created by Kamran_Zahoor</small></div></header>
+<header><svg width="34" height="34" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#14335a" stroke="#19c3b4" stroke-width="5"/><path d="M40 20h20v8l-4 6v14l16 26H28l16-26V34l-4-6z" fill="#19c3b4"/></svg><div><b>JANTEX LAB APP</b><small>Created by Kamran_Zahoor · v3</small></div></header>
 <main id="m"></main>
 <nav id="nav"></nav><div id="md"></div>
 <input type="file" id="fcam" accept="image/*" capture="environment" hidden><input type="file" id="fgal" accept="image/*" multiple hidden>
@@ -45,7 +45,7 @@ const Q=["Quality is not an act, it is a habit.","Every test matters. Every deta
 const qs=[...Q].sort(()=>Math.random()-.5).slice(0,2);$('#quotes').innerHTML=qs.map(esc).join('<br><br>');
 setTimeout(()=>{$('#splash').classList.add('off');setTimeout(()=>$('#splash').remove(),700)},5800);
 /* ---------- IndexedDB ---------- */
-const DB=new Promise((ok,no)=>{const r=indexedDB.open('jantexlab_v2',1);r.onupgradeneeded=()=>{r.result.createObjectStore('lots',{keyPath:'id',autoIncrement:true});r.result.createObjectStore('images',{keyPath:'id',autoIncrement:true})};r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
+const DB=(async()=>{const open=v=>new Promise((ok,no)=>{const r=indexedDB.open('jantexlab_v3',v);r.onupgradeneeded=()=>{const d=r.result;['lots','images'].forEach(n=>{if(!d.objectStoreNames.contains(n))d.createObjectStore(n,{keyPath:'id',autoIncrement:true})})};r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});let d=await open();if(!['lots','images'].every(n=>d.objectStoreNames.contains(n))){const v=d.version+1;d.close();d=await open(v)}return d})();
 const tx=async(s,m,f)=>{const d=await DB;return new Promise((ok,no)=>{const t=d.transaction(s,m);const q=f(t.objectStore(s));t.oncomplete=()=>ok(q&&q.result);t.onerror=()=>no(t.error)})};
 const getAll=(s='lots')=>tx(s,'readonly',o=>o.getAll()),put=(o,s='lots')=>tx(s,'readwrite',x=>x.put(o)),del=(id,s='lots')=>tx(s,'readwrite',x=>x.delete(id));
 const F=[['regDate','Register Entry Date'],['lotName','Lot Name'],['lotNo','Lot Number'],['total','Total Colors'],['received','Colors Received'],['reportDate','Report Date'],['reportColors','Report Colors'],['quality','Quality'],['remarks','Remarks']];
