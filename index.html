@@ -34,7 +34,7 @@ h2{margin:14px 0 6px;font-size:1.1rem}.hist{border-left:3px solid var(--teal);pa
 </style></head><body>
 <div id="splash"><svg class="logo" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="none" stroke="#19c3b4" stroke-width="3"/><path d="M40 14h20v6l-4 6v18l22 34a8 8 0 0 1-7 12H29a8 8 0 0 1-7-12l22-34V26l-4-6z" fill="#14335a" stroke="#19c3b4" stroke-width="3"/><path d="M30 70h40" stroke="#19c3b4" stroke-width="5"/></svg>
 <h1>JANTEX LAB APP</h1><p>Textile Lab Management System</p><div class="by">Created by Kamran_Zahoor</div><div class="bar"><i></i></div><div id="quotes"></div></div>
-<header><svg width="34" height="34" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#14335a" stroke="#19c3b4" stroke-width="5"/><path d="M40 20h20v8l-4 6v14l16 26H28l16-26V34l-4-6z" fill="#19c3b4"/></svg><div><b>JANTEX LAB APP</b><small>Created by Kamran_Zahoor · v3</small></div></header>
+<header><svg width="34" height="34" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#14335a" stroke="#19c3b4" stroke-width="5"/><path d="M40 20h20v8l-4 6v14l16 26H28l16-26V34l-4-6z" fill="#19c3b4"/></svg><div><b>JANTEX LAB APP</b><small>Created by Kamran_Zahoor · v4</small></div></header>
 <main id="m"></main>
 <nav id="nav"></nav><div id="md"></div>
 <input type="file" id="fcam" accept="image/*" capture="environment" hidden><input type="file" id="fgal" accept="image/*" multiple hidden>
@@ -91,24 +91,52 @@ async function exportC(){const L=await getAll();dl('jantex.csv','\ufeff'+F.map(f
 function scanView(){$('#m').innerHTML=`<h2>Scan Register</h2><div class="row"><button class="btn big" style="flex:1" onclick="$('#fcam').click()">📷 Camera</button><button class="btn big g" style="flex:1" onclick="$('#fgal').click()">🖼️ Gallery</button></div><div id="st"></div><div id="dr"></div>`;drawDraft();if(busy)stat(busy)}
 function stat(t,p){busy=t;const s=$('#st');if(!s)return;s.style.display=t?'block':'none';s.innerHTML=t+(p!=null?`<progress value="${p}" max="1"></progress>`:'')}
 $('#fcam').onchange=$('#fgal').onchange=async e=>{const fs=[...e.target.files];e.target.value='';for(const f of fs)await scan(f);stat('')};
-let W,lastRot=90;async function worker(p){if(!W)W=await Tesseract.createWorker('eng',1,{logger:m=>m.progress!=null&&stat('Reading… '+(m.status||''),m.progress)});return W}
-function prep(img,rot,max){const s=Math.min(1,max/Math.max(img.width,img.height)),w=img.width*s,h=img.height*s,c=document.createElement('canvas');
- c.width=rot%180?h:w;c.height=rot%180?w:h;const x=c.getContext('2d');x.translate(c.width/2,c.height/2);x.rotate(rot*Math.PI/180);x.filter='grayscale(1) contrast(1.6) brightness(1.1)';x.drawImage(img,-w/2,-h/2,w,h);return c}
+let W,lastRot=90;async function worker(){if(!W){W=await Tesseract.createWorker('eng',1,{logger:m=>m.progress!=null&&stat('Reading handwriting… '+Math.round(m.progress*100)+'%',m.progress)});await W.setParameters({tessedit_pageseg_mode:'11',user_defined_dpi:'300'})}return W}
+function words(d){let a=d.words;if(!a||!a.length){a=[];(d.blocks||[]).forEach(b=>b.paragraphs.forEach(p=>p.lines.forEach(l=>a.push(...l.words))))}return a.map(w=>({t:w.text,c:w.confidence,x0:w.bbox.x0,y0:w.bbox.y0,x1:w.bbox.x1,y1:w.bbox.y1}))}
+/*PURE_START*/
+const med=a=>{a=a.filter(Number.isFinite).sort((x,y)=>x-y);return a.length?a[a.length>>1]:0};
+const NUMR=/^\d{1,3}(?:\+\d{1,3})*$/,LOTR=/^[A-Za-z]{1,2}\s?[-–—.:]?\s?\d{3,4}(?:\+\d{1,4})*$/,HDRR=/^[0-9OIl]{1,2}[-–—.][0-9OIl]{1,2}[-–—.]\d{2,4}/;
+const isDate=t=>{const m=t.match(/^(\d{1,2})[\/.](\d{1,2})$/);return!!m&&+m[1]>=1&&+m[1]<=31&&+m[2]>=1&&+m[2]<=12};
+function splitGlued(Ws){const o=[];for(const w of Ws){const t=(w.t||'').trim(),m=t.match(/^([A-Za-z]{1,2})[-–—.:]?\s?(\d{3,4}(?:\+\d{1,4})*)([A-Za-z(].*)$/);
+  if(m){const a=t.length-m[3].length,xm=w.x0+(w.x1-w.x0)*a/t.length;o.push({...w,t:m[1]+'-'+m[2],x1:xm},{...w,t:m[3],x0:xm})}else o.push(w)}return o}
+function parseWords(Ws0){const W=splitGlued(Ws0).filter(w=>w.t&&w.t.trim()).map(w=>({...w,t:w.t.trim(),cy:(w.y0+w.y1)/2,cx:(w.x0+w.x1)/2}));if(!W.length)return[];
+ const mh=med(W.map(w=>w.y1-w.y0))||20,Xc=med(W.map(w=>w.cx));let s=0,R;
+ const yy=w=>w.cy-s*(w.cx-Xc),clus=()=>{const S=[...W].sort((a,b)=>yy(a)-yy(b)),R=[];S.forEach(w=>{const r=R[R.length-1];if(r&&Math.abs(yy(w)-r.y)<mh*.7){r.w.push(w);r.y=r.w.reduce((t,q)=>t+yy(q),0)/r.w.length}else R.push({y:yy(w),w:[w]})});return R};
+ for(let it=0;it<3;it++){R=clus();const m=med(R.map(r=>{const p=r.w;if(p.length<5)return NaN;const mx=p.reduce((t,q)=>t+q.cx,0)/p.length,my=p.reduce((t,q)=>t+q.cy,0)/p.length;let n=0,d=0;p.forEach(q=>{n+=(q.cx-mx)*(q.cy-my);d+=(q.cx-mx)**2});return d?n/d:NaN}));if(!Number.isFinite(m)||Math.abs(m)>.15||Math.abs(m-s)<.002)break;s=m}
+ R=clus();const lotLike=t=>/^[A-Za-z]{0,2}[-–—.:]?\d{3,4}(?:\+\d{1,4})*$/.test(t),cf=ws=>ws.length?ws.reduce((t,x)=>t+x.c,0)/ws.length:0;let cur='',out=[],last=null;
+ for(const r of R){let tk=r.w.sort((a,b)=>a.cx-b.cx),txt=tk.map(w=>w.t).join(' ');if((txt.match(/[A-Za-z0-9]/g)||[]).length<4)continue;
+  const hm=txt.match(/^\W{0,3}([0-9OIl]{1,2})\s?[-–—.]\s?([0-9OIl]{1,2})\s?[-–—.]\s?(\d{2,4})/);if(hm){cur=(hm[1]+'-'+hm[2]+'-'+hm[3]).replace(/[Oo]/g,'0').replace(/[Il]/g,'1');continue}
+  let i=0,no='',lw=null;if(lotLike(tk[0].t)){lw=tk[0];i=1}else if(/^[A-Za-z]{1,2}[-–—.:]$/.test(tk[0].t)&&tk[1]&&/^\d{3,4}/.test(tk[1].t)){lw={...tk[1],t:tk[0].t+tk[1].t};i=2}
+  if(!lw){const m=txt.match(/^\W{0,2}([A-Za-z0-9|\]]{1,2})\s?[-–—.:]\s?([0-9OoQlIsSBZ ]{3,6}?)\s*(?=[A-Za-z(]|$)(.*)$/);
+   if(m&&/\d/.test(m[2].replace(/[OoQlIsSBZ ]/g,''))){const c1=m[1].slice(-1),f={3:'J',1:'J','|':'J',']':'J',I:'J',j:'J',4:'A'}[c1]||c1.toUpperCase(),d=m[2].replace(/ /g,'').replace(/[OoQ]/g,'0').replace(/[lI]/g,'1').replace(/[sS]/g,'5').replace(/B/g,'8').replace(/Z/g,'2');
+    if(d.length>=3&&d.length<=4){no=f+'-'+d;lw={c:0,t:no};tk=m[3].split(/\s+/).filter(Boolean).map((t,j)=>({...tk[0],t,c:cf(tk),cx:tk[0].cx+j}));i=0}}}
+  if(!lw&&last&&tk.length<=4){last.remarks=(last.remarks+' '+txt).trim();continue}
+  if(lw&&!no)no=lw.t.replace(/\s/g,'').replace(/^([A-Za-z]{1,2})[-–—.:]?/,'$1-').toUpperCase();
+  const nm=[],rem=[];for(;i<tk.length;i++){const t=tk[i].t;if(NUMR.test(t)||isDate(t))break;if(/^[(\[]|[)\]]$/.test(t)||/^[A-Za-z]\.[A-Za-z]\.?/.test(t))rem.push(t.replace(/[()\[\]]/g,''));else nm.push(tk[i])}
+  let tot='',rec='',rd='';const q=[],tw=[],rw=[],dw=[],qw=[];
+  for(const k of tk.slice(i)){const t=k.t;if(!tot&&NUMR.test(t)){tot=t;tw.push(k)}else if(tot&&!rec&&!rd&&!q.length&&NUMR.test(t)){rec=t;rw.push(k)}else if(!rd&&!q.length&&isDate(t)){rd=t;dw.push(k)}else{q.push(t);qw.push(k)}}
+  const row=mk({regDate:cur,lotName:nm.map(w=>w.t).join(' '),lotNo:no,total:tot,received:rec,reportDate:rd,quality:q.join(' '),remarks:rem.join(' ')},tk,{lotNo:!lw||lw.c<50,lotName:!nm.length||cf(nm)<50,total:!tot||cf(tw)<50,received:!rec||cf(rw)<50,reportDate:!rd||cf(dw)<50,quality:!q.length||cf(qw)<50});out.push(row);last=row}
+ return out}
+function mk(o,ws,low){return{regDate:'',lotName:'',lotNo:'',total:'',received:'',reportDate:'',reportColors:'',quality:'',remarks:'',...o,low,bb:{x0:Math.min(...ws.map(w=>w.x0)),y0:Math.min(...ws.map(w=>w.y0)),x1:Math.max(...ws.map(w=>w.x1)),y1:Math.max(...ws.map(w=>w.y1))}}}
+function skewPts(g,w,h){let mean=0;for(let i=0;i<g.length;i++)mean+=g[i];mean/=g.length;const th=mean*.72,P=[];for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(g[y*w+x]<th)P.push(x,y);
+ const st=Math.max(1,Math.floor(P.length/2/50000))*2,sc=a=>{const r=a*Math.PI/180,cs=Math.cos(r),sn=Math.sin(r),H=new Float32Array(h+2*w+12);for(let i=0;i<P.length;i+=st)H[Math.round(P[i+1]*cs+P[i]*sn)+w+5]++;let t=0;for(let i=0;i<H.length;i++)t+=H[i]*H[i];return t};
+ let b=0,bs=-1;for(let a=-10;a<=10;a+=.5){const s=sc(a);if(s>bs){bs=s;b=a}}for(let a=b-.5;a<=b+.5;a+=.1){const s=sc(a);if(s>bs){bs=s;b=a}}return b}
+function binPure(d,bg){for(let i=0;i<d.length;i+=4){const g=.299*d[i]+.587*d[i+1]+.114*d[i+2],b=.299*bg[i]+.587*bg[i+1]+.114*bg[i+2],r=g/(b||1),v=r>.88?255:r<.66?0:(r-.66)/.22*255;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255}}
+/*PURE_END*/
+function clean(img,rot,max){const s=Math.min(1,max/Math.max(img.width,img.height)),w=Math.round(img.width*s),h=Math.round(img.height*s),c=document.createElement('canvas');c.width=rot%180?h:w;c.height=rot%180?w:h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.translate(c.width/2,c.height/2);x.rotate(rot*Math.PI/180);x.drawImage(img,-w/2,-h/2,w,h);return c}
+function rotBy(c,deg){const o=document.createElement('canvas');o.width=c.width;o.height=c.height;const x=o.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,o.width,o.height);x.translate(o.width/2,o.height/2);x.rotate(deg*Math.PI/180);x.drawImage(c,-c.width/2,-c.height/2);return o}
+function skew(c){const k=500/c.width,t=document.createElement('canvas');t.width=500;t.height=Math.round(c.height*k);const x=t.getContext('2d');x.drawImage(c,0,0,t.width,t.height);const d=x.getImageData(0,0,t.width,t.height).data,g=new Uint8Array(t.width*t.height);for(let i=0;i<g.length;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];return skewPts(g,t.width,t.height)}
+function bin(c){const x=c.getContext('2d');if(!('filter'in x))return;const b=document.createElement('canvas');b.width=c.width;b.height=c.height;const bx=b.getContext('2d');bx.filter='blur('+Math.round(c.width/40)+'px)';bx.drawImage(c,0,0);const a=x.getImageData(0,0,c.width,c.height);binPure(a.data,bx.getImageData(0,0,c.width,c.height).data);x.putImageData(a,0,0)}
 async function scan(file){try{stat('Loading photo…');const img=await createImageBitmap(file),w=await worker();
- let best=0,bs=-1;const order=[lastRot,...[0,90,270].filter(x=>x!==lastRot)];for(const r of order){stat('Straightening photo…');const d=(await w.recognize(prep(img,r,640))).data;const s=d.words.filter(k=>k.confidence>60&&/[A-Za-z0-9]{3,}/.test(k.text)).length;if(s>bs){bs=s;best=r}if(s>=12)break}lastRot=best;
- stat('Extracting data…');const c=prep(img,best,1800),d=(await w.recognize(c,{},{blocks:true})).data;
- const imgId=(await put({blob:file},'images'));const rows=parse(d.lines||[],c,imgId);draft=draft.concat(rows);if(!rows.length)alert('No rows found. Try a clearer, flat photo or add rows manually.');drawDraft()}catch(e){alert('Scan failed: '+e.message)}}
-function parse(lines,c,imgId){let cur='',out=[];for(const ln of lines){const t=ln.text.replace(/[|_]/g,' ').replace(/\s+/g,' ').trim(),cf=ln.confidence;
- const dh=t.match(/^(\d{1,2})\s*[-\/.]\s*(\d{1,2})\s*[-\/.]\s*(\d{2,4})/);const lm=t.match(/^([A-Z]{1,2}\s*-\s*\d{3,4}(?:\s*\+\s*\d{2,4})*)\s*(.*)$/i);
- if(dh&&!lm){cur=`${dh[1]}-${dh[2]}-${dh[3]}`;continue}if(!lm)continue;
- const no=lm[1].replace(/\s/g,'').toUpperCase(),tk=lm[2].split(' '),nm=[],rem=[];let i=0;
- for(;i<tk.length&&!/^\d+(\+\d+)*$/.test(tk[i]);i++){/^[(\[]/.test(tk[i])?rem.push(tk[i].replace(/[()\[\]]/g,'')):nm.push(tk[i])}
- const rest=tk.slice(i),tot=rest.shift()||'';let rec=rest[0]&&/^\d+(\+\d+)*$/.test(rest[0])?rest.shift():'';let rd=rest.findIndex(k=>/^\d{1,2}\/\d{1,2}$/.test(k)),rdv='';if(rd>=0){rdv=rest[rd];rest.splice(rd,1)}
- const b=ln.bbox,pad=6,cr=document.createElement('canvas');cr.className='crop';cr.width=b.x1-b.x0+2*pad;cr.height=b.y1-b.y0+2*pad;cr.getContext('2d').drawImage(c,b.x0-pad,b.y0-pad,cr.width,cr.height,0,0,cr.width,cr.height);
- out.push({regDate:cur,lotName:nm.join(' '),lotNo:no,total:tot,received:rec,reportDate:rdv,reportColors:'',quality:rest.join(' '),remarks:rem.join(' '),imgId,cf,cr})}return out}
+ let best=lastRot,bs=-1;for(const r of [lastRot,...[90,270,0,180].filter(x=>x!==lastRot)]){stat('Straightening photo…');const c=clean(img,r,700);bin(c);const s=words((await w.recognize(c)).data).filter(k=>k.c>50&&/[A-Za-z0-9]{3,}/.test(k.t)).length;if(s>bs){bs=s;best=r}if(s>=15)break}
+ lastRot=best;stat('Reading handwriting…');let c=clean(img,best,1800);const ang=skew(c);if(Math.abs(ang)>.3)c=rotBy(c,ang);bin(c);
+ const Wd=words((await w.recognize(c)).data);if(!Wd.length)throw new Error('OCR engine returned no text. Check internet once and retry.');
+ const imgId=await put({blob:file},'images'),rows=parseWords(Wd);
+ rows.forEach(r=>{r.imgId=imgId;const p=8,b=r.bb,cr=document.createElement('canvas');cr.className='crop';cr.width=Math.max(10,b.x1-b.x0+2*p);cr.height=Math.max(10,b.y1-b.y0+2*p);cr.getContext('2d').drawImage(c,b.x0-p,b.y0-p,cr.width,cr.height,0,0,cr.width,cr.height);r.cr=cr});
+ draft=draft.concat(rows);if(!rows.length)alert('Text was read but no rows could be built. Try a flatter, closer photo.');drawDraft()}catch(e){alert('Scan failed: '+e.message)}}
 function drawDraft(){const r=$('#dr');if(!r)return;if(!draft.length){r.innerHTML='<p style="color:var(--mut)">Pick a photo from the camera or gallery. Reading starts automatically.</p>';return}
- r.innerHTML=`<p style="margin:8px 0;color:var(--mut)">Review the data. Yellow cells are unsure or empty. Nothing is saved until you press Save.</p><div class="sc"><table><tr><th>Photo</th>${F.map(f=>`<th>${f[1]}</th>`).join('')}<th></th></tr>${draft.map((x,i)=>`<tr data-i="${i}"><td class="cp"></td>${F.map(f=>`<td><input class="${(!x[f[0]]&&f[0]!='remarks'&&f[0]!='reportColors')||(x.cf<65&&['lotName','quality','total','received'].includes(f[0]))?'w':''}" value="${esc(x[f[0]])}" oninput="draft[${i}].${f[0]}=this.value"></td>`).join('')}<td><button class="btn r" onclick="draft.splice(${i},1);drawDraft()">✕</button></td></tr>`).join('')}</table></div><div class="row"><button class="btn" onclick="saveDraft()">Save ${draft.length} rows</button><button class="btn g" onclick="draft=[];drawDraft()">Clear</button></div>`;
+ r.innerHTML=`<p style="margin:8px 0;color:var(--mut)">Review the data. Yellow cells are unsure or empty. Nothing is saved until you press Save.</p><div class="sc"><table><tr><th>Photo</th>${F.map(f=>`<th>${f[1]}</th>`).join('')}<th></th></tr>${draft.map((x,i)=>`<tr data-i="${i}"><td class="cp"></td>${F.map(f=>`<td><input class="${(x.low&&x.low[f[0]])||(!x[f[0]]&&!['remarks','reportColors'].includes(f[0]))?'w':''}" value="${esc(x[f[0]])}" oninput="draft[${i}].${f[0]}=this.value"></td>`).join('')}<td><button class="btn r" onclick="draft.splice(${i},1);drawDraft()">✕</button></td></tr>`).join('')}</table></div><div class="row"><button class="btn" onclick="saveDraft()">Save ${draft.length} rows</button><button class="btn g" onclick="draft=[];drawDraft()">Clear</button></div>`;
  r.querySelectorAll('tr[data-i]').forEach(tr=>tr.querySelector('.cp').appendChild(draft[tr.dataset.i].cr))}
-async function saveDraft(){for(const x of draft){const o={...x};delete o.cr;delete o.cf;o.regDate=o.regDate||new Date().toLocaleDateString('en-GB').replace(/\//g,'-');await put(o)}const n=draft.length;draft=[];alert(n+' rows saved');go('reg')}
+async function saveDraft(){for(const x of draft){const o={...x};delete o.cr;delete o.low;delete o.bb;o.regDate=o.regDate||new Date().toLocaleDateString('en-GB').replace(/\//g,'-');await put(o)}const n=draft.length;draft=[];alert(n+' rows saved');go('reg')}
 nav();render();setTimeout(()=>{try{worker()}catch(e){}},1500);if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 </script></body></html>
